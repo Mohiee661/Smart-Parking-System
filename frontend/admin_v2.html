@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard (V2) | Smart Parking</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Custom UI for V2 Slot Cards */
+        .slot-grid-v2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .slot-card-v2 {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .slot-card-v2:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Status Indicators & Colors */
+        .slot-card-v2.free {
+            border-left: 4px solid #10B981;
+        }
+
+        .slot-card-v2.free .status-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+        }
+
+        .slot-card-v2.occupied {
+            border-left: 4px solid #EF4444;
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .slot-card-v2.occupied .status-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+        }
+
+        .slot-card-v2.reserved {
+            border-left: 4px solid #F59E0B;
+            background: linear-gradient(145deg, rgba(245, 158, 11, 0.05) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .slot-card-v2.reserved .status-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FBBF24;
+        }
+
+        /* Card Header */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slot-id {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.025em;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* User Details Section */
+        .user-details {
+            margin-top: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .user-email {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-parking"></i> SmartSpace <span class="badge badge-warning"
+                style="margin-left: 10px; font-size: 0.7rem;">ADMIN V2</span>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <div class="container fade-in" style="margin-top: 2rem;">
+
+        <div style="margin-bottom: 2rem;">
+            <h2>Overview</h2>
+            <p style="color: var(--text-muted);">Real-time metrics and revenue analysis</p>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(16, 185, 129, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-wallet" style="color: #34D399; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-revenue" style="margin: 0;">₹0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Current Revenue</span>
+                </div>
+            </div>
+
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(79, 70, 229, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-car" style="color: #818CF8; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-occupancy" style="margin: 0;">0/0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Live Occupancy</span>
+                </div>
+            </div>
+
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(245, 158, 11, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-clock" style="color: #FBBF24; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-reserved" style="margin: 0;">0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Active Reservations</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid-2">
+            <div class="glass-card">
+                <h3>Revenue Trends (Last 7 Days)</h3>
+                <div style="height: 250px; margin-top: 1rem;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-card">
+                <h3>Slot Usage</h3>
+                <div style="height: 250px; margin-top: 1rem; display: flex; justify-content: center;">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 2rem;">
+            <h3>Live Slot Status</h3>
+            <!-- Use V2 Grid -->
+            <div class="slot-grid-v2" id="admin-slots" style="margin-top: 1.5rem;">
+                <!-- Filled via JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="assets/js/main.js"></script>
+    <script>
+        const STATUS_URL = "/status";
+
+        // MOCK DATA for charts (since backend doesn't support history yet)
+        const initCharts = () => {
+            // Revenue Chart
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+            new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: [150, 230, 180, 320, 290, 450, 410],
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Usage Chart
+            const ctxUse = document.getElementById('usageChart').getContext('2d');
+            window.usageChart = new Chart(ctxUse, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Free', 'Occupied', 'Reserved'],
+                    datasets: [{
+                        data: [10, 5, 2],
+                        backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+        };
+
+        // Real-time Update
+        async function fetchAdminData() {
+            try {
+                const response = await fetch(STATUS_URL);
+                const data = await response.json();
+                updateDashboard(data.slots);
+            } catch (e) {
+                console.error("Fetch failed", e);
+            }
+        }
+
+        function updateDashboard(slots) {
+            // Calculate stats
+            let occupied = 0;
+            let reserved = 0;
+            let free = 0;
+            let totalRevenue = 0;
+
+            const container = document.getElementById("admin-slots");
+            container.innerHTML = "";
+
+            slots.forEach(slot => {
+                let statusClass = "free";
+                if (slot.status === "OCCUPIED" || slot.status === "RESERVED_OCCUPIED") {
+                    occupied++;
+                    statusClass = "occupied";
+                } else if (slot.status === "RESERVED") {
+                    reserved++;
+                    statusClass = "reserved";
+                } else {
+                    free++;
+                }
+
+                if (slot.total_cost) totalRevenue += slot.total_cost;
+
+                // Create Card V2
+                const div = document.createElement("div");
+                div.className = `slot-card-v2 ${statusClass}`;
+
+                // User Details Section
+                let userHtml = "";
+                if (slot.user_email) {
+                    userHtml = `
+                        <div class="user-details">
+                            <div class="user-avatar"><i class="fas fa-user"></i></div>
+                            <div class="user-email" title="${slot.user_email}">${slot.user_email}</div>
+                        </div>
+                    `;
+                } else if (statusClass === "free") {
+                    userHtml = `
+                        <div class="user-details" style="opacity:0.3;">
+                            <span style="font-size:0.75rem;">Available for booking</span>
+                        </div>
+                    `;
+                } else {
+                    userHtml = `
+                        <div class="user-details" style="opacity:0.5;">
+                            <span style="font-size:0.75rem;">Unknown User</span>
+                        </div>
+                    `;
+                }
+
+                div.innerHTML = `
+                    <div class="card-header">
+                        <span class="slot-id">${slot.id}</span>
+                        <span class="status-badge">${slot.status.replace('_', ' ')}</span>
+                    </div>
+                    ${userHtml}
+                `;
+                container.appendChild(div);
+            });
+
+            // Update Text
+            document.getElementById("stat-occupancy").innerText = `${occupied + reserved}/${slots.length}`;
+            document.getElementById("stat-reserved").innerText = reserved;
+            document.getElementById("stat-revenue").innerText = formatCurrency(totalRevenue);
+
+            // Update Chart
+            if (window.usageChart) {
+                window.usageChart.data.datasets[0].data = [free, occupied, reserved];
+                window.usageChart.update();
+            }
+        }
+
+        initCharts();
+        fetchAdminData();
+        setInterval(fetchAdminData, 3000);
+
+    </script>
+</body>
+
+</html>

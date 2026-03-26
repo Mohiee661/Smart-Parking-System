@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Smart Parking</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar fadeIn">
+        <a href="/" class="logo">
+            <i class="fas fa-parking"></i> SmartSpace
+        </a>
+    </nav>
+
+    <div class="login-page fade-in">
+        <div class="glass-card login-card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="margin-bottom: 0.5rem;">Welcome Back</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Sign in to manage reservations</p>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form method="POST" action="/login">
+                <label class="form-label">Email Address</label>
+                <div style="position: relative;">
+                    <i class="fas fa-envelope"
+                        style="position: absolute; left: 15px; top: 13px; color: var(--text-muted);"></i>
+                    <input type="email" name="email" class="form-input" placeholder="user@parking.com"
+                        style="padding-left: 40px;" required>
+                </div>
+
+                <label class="form-label">Password</label>
+                <div style="position: relative;">
+                    <i class="fas fa-lock"
+                        style="position: absolute; left: 15px; top: 13px; color: var(--text-muted);"></i>
+                    <input type="password" name="password" class="form-input" placeholder="••••••••"
+                        style="padding-left: 40px;" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Error message placeholder (Managed by backend return currently, but good to have style) -->
+            <!-- Note: Backend returns raw HTML on error, ideally we should handle this via JS or fix backend content negotiation, 
+                 but for this scope, we mimic the structure or let backend redirect to a page with query param.
+                 Current backend returns simple HTML string on error. 
+            -->
+
+            <div class="hint"
+                style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-muted);">
+                <div style="margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> <b>Demo Credentials:</b></div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>User:</span> <span style="color: var(--text-main);">user@parking.com / user123</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                    <span>Admin:</span> <span style="color: var(--text-main);">admin@parking.com / admin123</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

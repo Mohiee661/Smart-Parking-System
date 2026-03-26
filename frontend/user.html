@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Portal | Smart Parking</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-parking"></i> SmartSpace <span class="badge badge-success"
+                style="margin-left: 10px; font-size: 0.7rem;">USER</span>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="container fade-in" style="margin-top: 2rem;">
+
+        <div class="grid-2" style="grid-template-columns: 1fr 3fr;">
+
+            <!-- LEFT PANEL: CONTROLS -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+                <!-- Quick Reserve -->
+                <div class="glass-card">
+                    <h3><i class="fas fa-ticket-alt" style="color: var(--accent-color);"></i> Reservation</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Select duration and
+                        click a free slot.</p>
+
+                    <label class="form-label">Duration</label>
+                    <select id="duration" class="form-input" onchange="updatePrice()">
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 Hour</option>
+                        <option value="90">1 Hour 30 Mins</option>
+                        <option value="120">2 Hours</option>
+                    </select>
+
+                    <div
+                        style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-muted);">Total Cost</span>
+                        <span id="totalPrice"
+                            style="font-size: 1.25rem; font-weight: 700; color: var(--secondary-color);">₹10.00</span>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="glass-card">
+                    <h3>Legend</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div
+                                style="width: 12px; height: 12px; border-radius: 50%; background: var(--secondary-color);">
+                            </div>
+                            <span style="font-size: 0.9rem;">Available</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div
+                                style="width: 12px; height: 12px; border-radius: 50%; background: var(--danger-color);">
+                            </div>
+                            <span style="font-size: 0.9rem;">Occupied</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div
+                                style="width: 12px; height: 12px; border-radius: 50%; background: var(--accent-color);">
+                            </div>
+                            <span style="font-size: 0.9rem;">Reserved</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: SLOTS -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Live Parking Status</h2>
+                    <span
+                        style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+                        <span
+                            style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite;"></span>
+                        Live Updates
+                    </span>
+                </div>
+
+                <div class="slot-grid" id="slots">
+                    <!-- Loaded via JS -->
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p style="margin-top: 1rem;">Loading parking data...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="assets/js/main.js"></script>
+    <script>
+        const STATUS_URL = "/status";
+        const RESERVE_URL = "/reserve";
+        const PRICE_PER_HOUR = 20;
+
+        function updatePrice() {
+            const minutes = document.getElementById("duration").value;
+            const cost = (PRICE_PER_HOUR * minutes / 60);
+            document.getElementById("totalPrice").innerText = formatCurrency(cost);
+        }
+
+        async function fetchSlots() {
+            try {
+                const response = await fetch(STATUS_URL);
+                const data = await response.json();
+                renderSlots(data.slots);
+            } catch (error) {
+                console.error("Error fetching slots:", error);
+
+                // If it fails (maybe logged out), redirect
+                if (window.location.pathname !== '/login.html') {
+                    // Optional: check if 401/403 and reload
+                }
+            }
+        }
+
+        function renderSlots(slots) {
+            const container = document.getElementById("slots");
+            container.innerHTML = "";
+
+            if (slots.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">No slots found.</div>`;
+                return;
+            }
+
+            slots.forEach(slot => {
+                const div = document.createElement("div");
+                div.className = "slot-card " + slot.status.toLowerCase(); // free, occupied, reserved
+
+                let icon = "fa-check-circle";
+                let statusText = "Available";
+
+                if (slot.status === "OCCUPIED" || slot.status === "RESERVED_OCCUPIED") {
+                    icon = "fa-car-side";
+                    div.classList.add("occupied"); // Ensure occupied class
+                    statusText = "Occupied";
+                } else if (slot.status === "RESERVED") {
+                    icon = "fa-clock";
+                    statusText = "Reserved";
+                }
+
+                div.innerHTML = `
+                    <div class="slot-number">${slot.id}</div>
+                    <i class="fas ${icon} icon" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <div class="slot-status">${statusText}</div>
+                    ${slot.remaining_seconds ? `<div style="font-size: 0.75rem; margin-top: 0.25rem;">${Math.ceil(slot.remaining_seconds / 60)}m left</div>` : ''}
+                `;
+
+                if (slot.status === "FREE") {
+                    div.onclick = () => reserveSlot(slot.id);
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        async function reserveSlot(slotId) {
+            const duration = document.getElementById("duration").value;
+
+            // Simple confirm for now
+            if (!confirm(`Reserve Slot ${slotId} for ${duration} minutes?`)) return;
+
+            try {
+                const response = await fetch(`${RESERVE_URL}/${slotId}`, {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: parseInt(duration) })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    fetchSlots(); // Refresh immediately
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (e) {
+                showToast("Failed to reserve slot", 'error');
+            }
+        }
+
+        // Init
+        updatePrice();
+        fetchSlots();
+        setInterval(fetchSlots, 2000); // Polling every 2s
+
+        // Pulse Animation Inject
+        const style = document.createElement('style');
+        style.innerHTML = `
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

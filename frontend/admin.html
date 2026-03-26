@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smart Parking</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-parking"></i> SmartSpace <span class="badge badge-warning"
+                style="margin-left: 10px; font-size: 0.7rem;">ADMIN</span>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <div class="container fade-in" style="margin-top: 2rem;">
+
+        <div style="margin-bottom: 2rem;">
+            <h2>Overview</h2>
+            <p style="color: var(--text-muted);">Real-time metrics and revenue analysis</p>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(16, 185, 129, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-wallet" style="color: #34D399; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-revenue" style="margin: 0;">₹0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Current Revenue</span>
+                </div>
+            </div>
+
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(79, 70, 229, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-car" style="color: #818CF8; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-occupancy" style="margin: 0;">0/0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Live Occupancy</span>
+                </div>
+            </div>
+
+            <div class="glass-card" style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="background: rgba(245, 158, 11, 0.2); padding: 1rem; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-clock" style="color: #FBBF24; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 id="stat-reserved" style="margin: 0;">0</h3>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Active Reservations</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid-2">
+            <div class="glass-card">
+                <h3>Revenue Trends (Last 7 Days)</h3>
+                <div style="height: 250px; margin-top: 1rem;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-card">
+                <h3>Slot Usage</h3>
+                <div style="height: 250px; margin-top: 1rem; display: flex; justify-content: center;">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 2rem;">
+            <h3>Live Slot Status</h3>
+            <div class="slot-grid" id="admin-slots" style="margin-top: 1.5rem;">
+                <!-- Filled via JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="assets/js/main.js"></script>
+    <script>
+        const STATUS_URL = "/status";
+
+        // MOCK DATA for charts (since backend doesn't support history yet)
+        const initCharts = () => {
+            // Revenue Chart
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+            new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: [150, 230, 180, 320, 290, 450, 410],
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Usage Chart
+            const ctxUse = document.getElementById('usageChart').getContext('2d');
+            window.usageChart = new Chart(ctxUse, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Free', 'Occupied', 'Reserved'],
+                    datasets: [{
+                        data: [10, 5, 2],
+                        backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+        };
+
+        // Real-time Update
+        async function fetchAdminData() {
+            try {
+                const response = await fetch(STATUS_URL);
+                const data = await response.json();
+                updateDashboard(data.slots);
+            } catch (e) {
+                console.error("Fetch failed", e);
+            }
+        }
+
+        function updateDashboard(slots) {
+            // Calculate stats
+            let occupied = 0;
+            let reserved = 0;
+            let free = 0;
+            let totalRevenue = 0;
+
+            const container = document.getElementById("admin-slots");
+            container.innerHTML = "";
+
+            slots.forEach(slot => {
+                if (slot.status === "OCCUPIED" || slot.status === "RESERVED_OCCUPIED") occupied++;
+                else if (slot.status === "RESERVED") reserved++;
+                else free++;
+
+                if (slot.total_cost) totalRevenue += slot.total_cost;
+
+                // Render Slot Mini
+                const div = document.createElement("div");
+                div.className = "slot-card " + slot.status.toLowerCase();
+                div.style.height = "80px"; // smaller for admin
+                div.innerHTML = `<span style="font-weight:bold;">#${slot.id}</span><span style="font-size:0.7rem;">${slot.status}</span>`;
+                container.appendChild(div);
+            });
+
+            // Update Text
+            document.getElementById("stat-occupancy").innerText = `${occupied + reserved}/${slots.length}`;
+            document.getElementById("stat-reserved").innerText = reserved;
+
+            // Note: Since we don't have historical revenue in DB persistent easily accessible here without more changes, 
+            // we will just sum up active reservation costs for "Current Active Revenue"
+            document.getElementById("stat-revenue").innerText = formatCurrency(totalRevenue);
+
+            // Update Chart
+            if (window.usageChart) {
+                window.usageChart.data.datasets[0].data = [free, occupied, reserved];
+                window.usageChart.update();
+            }
+        }
+
+        initCharts();
+        fetchAdminData();
+        setInterval(fetchAdminData, 3000);
+
+    </script>
+</body>
+
+</html>
